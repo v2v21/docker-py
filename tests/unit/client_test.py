@@ -3,6 +3,7 @@ import os
 import unittest
 
 import docker
+from docker.context.context import Context
 import pytest
 from docker.constants import (
     DEFAULT_DOCKER_API_VERSION, DEFAULT_TIMEOUT_SECONDS,
@@ -262,3 +263,19 @@ class FromEnvTest(unittest.TestCase):
                                          60,
                                          maxsize=POOL_SIZE
                                          )
+
+
+class FromContextTest(unittest.TestCase):
+
+    @mock.patch("docker.client.ContextAPI.get_context")
+    def test_from_context(self, mock_obj):
+        """Test that context params are passed through."""
+        mock_obj.return_value = Context("test",
+                                        host="https://192.168.59.103:2376",
+                                        )
+        client = docker.from_context(name="test",
+                                     version=DEFAULT_DOCKER_API_VERSION,
+                                     )
+
+        mock_obj.assert_called_once_with("test")
+        assert client.api.base_url == "https://192.168.59.103:2376"

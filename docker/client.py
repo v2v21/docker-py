@@ -1,4 +1,5 @@
 from .api.client import APIClient
+from .context.api import ContextAPI
 from .constants import (DEFAULT_TIMEOUT_SECONDS, DEFAULT_MAX_POOL_SIZE)
 from .models.configs import ConfigCollection
 from .models.containers import ContainerCollection
@@ -99,6 +100,42 @@ class DockerClient:
             version=version,
             use_ssh_client=use_ssh_client,
             **kwargs_from_env(**kwargs)
+        )
+
+    @classmethod
+    def from_context(cls, **kwargs):
+        """
+        Return a client configured from the passed context.
+
+        Args:
+            name (str): The name of the context to use. Default: ``default``
+            version (str): The version of the API to use. Set to ``auto`` to
+                automatically detect the server's version. Default: ``auto``
+            timeout (int): Default timeout for API calls, in seconds.
+            max_pool_size (int): The maximum number of connections
+                to save in the pool.
+            use_ssh_client (bool): If set to `True`, an ssh connection is
+                made via shelling out to the ssh client. Ensure the ssh
+                client is installed and configured on the host.
+
+        Example:
+
+            >>> import docker
+            >>> client = docker.from_context()
+        """
+        name = kwargs.pop('name', 'default')
+        version = kwargs.pop('version', None)
+        timeout = kwargs.pop('timeout', DEFAULT_TIMEOUT_SECONDS)
+        max_pool_size = kwargs.pop('max_pool_size', DEFAULT_MAX_POOL_SIZE)
+        use_ssh_client = kwargs.pop('use_ssh_client', False)
+        context = ContextAPI.get_context(name)
+        return cls(
+            timeout=timeout,
+            max_pool_size=max_pool_size,
+            version=version,
+            use_ssh_client=use_ssh_client,
+            base_url=context.Host,
+            tls=context.TLSConfig,
         )
 
     # Resources
@@ -222,3 +259,4 @@ class DockerClient:
 
 
 from_env = DockerClient.from_env
+from_context = DockerClient.from_context
